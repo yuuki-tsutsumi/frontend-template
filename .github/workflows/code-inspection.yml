@@ -1,0 +1,49 @@
+name: Code Inspection
+
+on: [push, pull_request]
+
+env:
+  NEXT_PUBLIC_USER_POOL_ID: ap-northeast-1_dummy
+  NEXT_PUBLIC_CLIENT_ID: dummy
+
+jobs:
+  test_and_build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20.19.2
+          cache: yarn
+      # yarnのキャッシュを使用
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/yarn
+          key: ${{ runner.os }}-yarn-${{ hashFiles('package.json', 'yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+      # nextのキャッシュを使用
+      - uses: actions/cache@v3
+        with:
+          path: .next
+          key: ${{ runner.os }}-next-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-next-
+
+      - name: Install Yarn 1.22.22
+        run: npm install -g yarn@1.22.22
+
+      - name: Install dependencies
+        run: yarn --frozen-lockfile
+
+      - name: Test
+        run: yarn test
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Format
+        run: yarn format:check
+
+      - name: Build
+        run: yarn build
